@@ -78,6 +78,7 @@ def gen_batch_function(data_folder, image_shape):
         background_color = np.array([255, 0, 0])
 
         random.shuffle(image_paths)
+        print("Num batches in each epoch: ", len(image_paths)//batch_size)
         for batch_i in range(0, len(image_paths), batch_size):
             images = []
             gt_images = []

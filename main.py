@@ -1,4 +1,5 @@
 import os.path
+import numpy as np
 import tensorflow as tf
 import helper
 import warnings
@@ -81,13 +82,13 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     encoded_7 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, 1)
 
     '''Decoder'''
-    deconv_1 = tf.layers.conv2d_transpose(encoded_7, num_classes, 4, 2) # padding?
+    deconv_1 = tf.layers.conv2d_transpose(encoded_7, num_classes, 4, 2, "same") # padding?
     skip_1 = tf.add(deconv_1, encoded_4)
 
-    deconv_2 = tf.layers.conv2d_transpose(skip_1, num_classes, 4, 2)
+    deconv_2 = tf.layers.conv2d_transpose(skip_1, num_classes, 4, 2, "same")
     skip_2 = tf.add(deconv_2, encoded_3)
 
-    deconv_3 = tf.layers.conv2d_transpose(skip_2, num_classes, 16, 8)
+    deconv_3 = tf.layers.conv2d_transpose(skip_2, num_classes, 16, 8, "same")
 
     return deconv_3
 tests.test_layers(layers)
@@ -115,7 +116,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     crossent_loss = tf.reduce_mean(
         tf.nn.softmax_cross_entropy_with_logits(
         logits = logits,
-        labels = correct_label
+        labels = tf.reshape(correct_label, [-1, num_classes])
     )
     )
 
@@ -150,7 +151,6 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     
     for epoch in range(epochs):
         print("### EPOCH %d"%(epoch+1))
-        print("Losses: ", end=" ")
         t0 = time.time()
 
         for batch_img, batch_gt in get_batches_fn(batch_size):
@@ -162,7 +162,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                 keep_prob: 0.5,
                 learning_rate: 0.001,
             })
-            print(np.round(crossent_loss, 3), end=" ")
+            print("Loss:", np.round(crossent_loss, 3), "  Time used:", time.time()-t0)
 
         print("Time used:", time.time()-t0, "\n")
 
@@ -196,12 +196,12 @@ def run():
         # TODO: Build NN using load_vgg, layers, and optimize function
         image_input, keep_prob, layer3_out, layer4_out, layer7_out = load_vgg(sess, vgg_path)
         nn_last_layer = layers(layer3_out, layer4_out, layer7_out, num_classes)
-        correct_label = tf.placeholder(tf.int32, shape=[None, None])
+        correct_label = tf.placeholder(tf.int32, shape=[None, None, None, None])
         learning_rate = tf.placeholder(tf.float32)
         logits, train_op, crossent_loss = optimize(nn_last_layer, correct_label, learning_rate, num_classes)
 
         # TODO: Train NN using the train_nn function
-        epochs = 5
+        epochs = 2
         batch_size = 16
         sess.run(tf.global_variables_initializer())
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op, crossent_loss, 
