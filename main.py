@@ -63,32 +63,19 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
     # TODO: Implement function
 
-    # approach 1: just conv them, single conv
-
-    # question: image shape?! get from tensor?
-    # approach: no image shape included
-
-    # approach 1 not that good
-
-    # approach 2: 
-    
-    # optional question: choose of kernel initializer is required?
-
-    # optional question: why skip layer work?
-
     '''Encoder'''
-    encoded_3 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, 1)
-    encoded_4 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, 1)
-    encoded_7 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, 1)
+    encoded_3 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, 1, kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+    encoded_4 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, 1, kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+    encoded_7 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, 1, kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     '''Decoder'''
-    deconv_1 = tf.layers.conv2d_transpose(encoded_7, num_classes, 4, 2, "same") # padding?
+    deconv_1 = tf.layers.conv2d_transpose(encoded_7, num_classes, 4, 2, "same", kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)) # padding?
     skip_1 = tf.add(deconv_1, encoded_4)
 
-    deconv_2 = tf.layers.conv2d_transpose(skip_1, num_classes, 4, 2, "same")
+    deconv_2 = tf.layers.conv2d_transpose(skip_1, num_classes, 4, 2, "same", kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
     skip_2 = tf.add(deconv_2, encoded_3)
 
-    deconv_3 = tf.layers.conv2d_transpose(skip_2, num_classes, 16, 8, "same")
+    deconv_3 = tf.layers.conv2d_transpose(skip_2, num_classes, 16, 8, "same", kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     return deconv_3
 tests.test_layers(layers)
@@ -160,7 +147,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                 input_image: batch_img,
                 correct_label: batch_gt,
                 keep_prob: 0.5,
-                learning_rate: 0.001,
+                learning_rate: 0.0001,
             })
             print("Loss:", np.round(crossent_loss, 3), "  Time used:", time.time()-t0)
 
@@ -201,8 +188,8 @@ def run():
         logits, train_op, crossent_loss = optimize(nn_last_layer, correct_label, learning_rate, num_classes)
 
         # TODO: Train NN using the train_nn function
-        epochs = 2
-        batch_size = 16
+        epochs = 10
+        batch_size = 4
         sess.run(tf.global_variables_initializer())
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op, crossent_loss, 
         image_input, correct_label, keep_prob, learning_rate)
